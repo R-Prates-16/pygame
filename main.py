@@ -1,100 +1,95 @@
 import pygame
 from inventario1 import Inventario1
-from inventario2 import Inventario2
 
-class Jogo:
-    def __init__(self):
-        pygame.init()
-        self.WIDTH, self.HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
-        self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT), pygame.FULLSCREEN)
-        self.clock = pygame.time.Clock()
+# Inicialização do Pygame
+pygame.init()
 
-        self.BLACK = (0, 0, 0)
-        self.RED = (200, 0, 0)
-        self.WHITE = (255, 255, 255)
+# Definir as dimensões da tela e criar a janela em tela cheia
+WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+clock = pygame.time.Clock()
 
-        self.button_rect = pygame.Rect(self.WIDTH - 150, self.HEIGHT - 100, 140, 60)  # Botão vermelho
+# Cores
+BLACK = (0, 0, 0)
+RED = (200, 0, 0)
+WHITE = (255, 255, 255)
 
-        self.dragging_item = None
-        self.dragging_from = None
+# Botão para abrir o inventário 2
+button_rect = pygame.Rect(WIDTH - 150, HEIGHT - 100, 140, 60)
 
-        self.inventario1 = Inventario1()
-        self.inventario2 = Inventario2()
+# Variáveis de controle de arrastar itens
+dragging_item = None
+dragging_from = None
 
-        self.running = True
+# Criar as instâncias dos inventários
+inventario1 = Inventario1((50, 50, 50), 100, ["Espada", "Poção", "Escudo"])
+inventario2 = Inventario1((0, 100, 0), 600)
 
-    def run(self):
-        while self.running:
-            self.screen.fill(self.BLACK)
+# Variável de controle do loop
+running = True
 
-            for event in pygame.event.get():
-                self.handle_event(event)
+# Função principal para o loop do jogo
+def main():
+    global running, dragging_item, dragging_from
+    
+    while running:
 
-            if self.inventario1.inventory_open:
-                self.inventario1.draw_inventory(self.screen)
-            if self.inventario2.inventory_open:
-                self.inventario2.draw_inventory(self.screen)
+        # Verificar eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-            self.draw_button()
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_LALT, pygame.K_RALT):
+                    inventario1.inventory_open = not inventario1.inventory_open
+                if event.key == pygame.K_ESCAPE:
+                    running = False
 
-            if self.dragging_item:
-                self.draw_dragging_item()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    inventario2.inventory_open = not inventario2.inventory_open
 
-            pygame.display.flip()
-            self.clock.tick(30)
+                if inventario1.inventory_open:
+                    item = inventario1.get_item_at(event.pos)
+                    if item:
+                        dragging_item = item
+                        dragging_from = "inventory1"
 
-        pygame.quit()
+                if inventario2.inventory_open:
+                    item = inventario2.get_item_at(event.pos)
+                    if item:
+                        dragging_item = item
+                        dragging_from = "inventory2"
 
-    def handle_event(self, event):
-        if event.type == pygame.QUIT:
-            self.running = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                # Handle mouse button release
+                if dragging_item:
+                    if inventario2.inventory_open and inventario2.inventory_rect.collidepoint(event.pos) and dragging_from == "inventory1":
+                        inventario1.items.remove(dragging_item)
+                        inventario2.items.append(dragging_item)
+                    elif inventario1.inventory_open and inventario1.inventory_rect.collidepoint(event.pos) and dragging_from == "inventory2":
+                        inventario2.items.remove(dragging_item)
+                        inventario1.items.append(dragging_item)
+                    dragging_item = None
+                    dragging_from = None
 
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_LALT, pygame.K_RALT):
-                self.inventario1.inventory_open = not self.inventario1.inventory_open
-            if event.key == pygame.K_ESCAPE:
-                self.running = False
+        # Desenhar os inventários e o botão
+        if inventario1.inventory_open:
+            inventario1.draw_inventory(screen)
+        if inventario2.inventory_open:
+            inventario2.draw_inventory(screen)
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.button_rect.collidepoint(event.pos):
-                self.inventario2.inventory_open = not self.inventario2.inventory_open
+        inventario1.draw_button(screen)  # Agora o método `draw_button` é da classe Inventario1
 
-            if self.inventario1.inventory_open:
-                item = self.inventario1.get_item_at(event.pos)
-                if item:
-                    self.dragging_item = item
-                    self.dragging_from = "inventory1"
+        if dragging_item:
+            inventario1.draw_dragging_item(screen, dragging_item)  # Agora o método `draw_dragging_item` é da classe Inventario1
 
-            if self.inventario2.inventory_open:
-                item = self.inventario2.get_item_at(event.pos)
-                if item:
-                    self.dragging_item = item
-                    self.dragging_from = "inventory2"
+        pygame.display.flip()
+        clock.tick(30)
 
-        if event.type == pygame.MOUSEBUTTONUP:
-            self.handle_mouse_button_up(event)
-
-    def handle_mouse_button_up(self, event):
-        if self.dragging_item:
-            if self.inventario2.inventory_open and self.inventario2.inventory_rect.collidepoint(event.pos) and self.dragging_from == "inventory1":
-                self.inventario1.items.remove(self.dragging_item)
-                self.inventario2.items.append(self.dragging_item)
-            elif self.inventario1.inventory_open and self.inventario1.inventory_rect.collidepoint(event.pos) and self.dragging_from == "inventory2":
-                self.inventario2.items.remove(self.dragging_item)
-                self.inventario1.items.append(self.dragging_item)
-            self.dragging_item = None
-            self.dragging_from = None
-
-    def draw_button(self):
-        pygame.draw.rect(self.screen, self.RED, self.button_rect, border_radius=10)
-        text = self.inventario1.font.render("Abrir", True, self.WHITE)
-        self.screen.blit(text, (self.button_rect.x + 20, self.button_rect.y + 10))
-
-    def draw_dragging_item(self):
-        text = self.inventario1.font.render(self.dragging_item, True, self.WHITE)
-        self.screen.blit(text, pygame.mouse.get_pos())
-
+# Chamar a função principal para rodar o jogo
 if __name__ == "__main__":
-    jogo = Jogo()
-    jogo.run()
+    main()
 
+# Finalizar o Pygame
+pygame.quit()

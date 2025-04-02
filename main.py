@@ -77,11 +77,15 @@ class Jogo:
     def handle_mouse_button_up(self, event):
         if self.dragging_item:
             if self.inventario2.inventory_open and self.inventario2.inventory_rect.collidepoint(event.pos) and self.dragging_from == "inventory1":
-                self.inventario1.items.remove(self.dragging_item)
-                self.inventario2.items.append(self.dragging_item)
+                if self.dragging_item in self.inventario1.items:
+                    self.inventario1.items.remove(self.dragging_item)
+                    self.inventario2.items.append(self.dragging_item)
+
             elif self.inventario1.inventory_open and self.inventario1.inventory_rect.collidepoint(event.pos) and self.dragging_from == "inventory2":
-                self.inventario2.items.remove(self.dragging_item)
-                self.inventario1.items.append(self.dragging_item)
+                if self.dragging_item in self.inventario2.items:
+                    self.inventario2.items.remove(self.dragging_item)
+                    self.inventario1.items.append(self.dragging_item)
+
             self.dragging_item = None
             self.dragging_from = None
 
@@ -91,10 +95,9 @@ class Jogo:
         self.screen.blit(text, (self.button_rect.x + 20, self.button_rect.y + 10))
 
     def draw_dragging_item(self):
-        text = self.inventario1.font.render(self.dragging_item, True, self.WHITE)
+        text = self.inventario1.font.render(self.dragging_item[0], True, self.WHITE)
         self.screen.blit(text, pygame.mouse.get_pos())
 
 if __name__ == "__main__":
     jogo = Jogo()
     jogo.run()
-
